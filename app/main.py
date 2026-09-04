@@ -6,6 +6,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("incident-agent")
 
 app = FastAPI()
+processed_incidents: set[str] = set()
 
 
 class IncidentPayload(BaseModel):
@@ -17,10 +18,12 @@ class IncidentPayload(BaseModel):
 
 
 def process_incident(payload: IncidentPayload):
-    """
-    Placeholder for the real work: Gemini decision + ServiceNow write-back.
-    For now, just log it so we can confirm the background task runs.
-    """
+    if payload.incident_sys_id in processed_incidents:
+        logger.info(f"[SKIP] {payload.number} (sys_id={payload.incident_sys_id}) already processed")
+        return
+
+    processed_incidents.add(payload.incident_sys_id)
+
     logger.info(f"[BACKGROUND] Processing incident {payload.number} "
                 f"(sys_id={payload.incident_sys_id}): "
                 f"'{payload.short_description}' (priority {payload.priority})")
