@@ -5,6 +5,7 @@ from fastapi import FastAPI, BackgroundTasks, HTTPException
 from pydantic import BaseModel, Field
 from app.gemini_client import get_decision
 from app.servicenow_client import write_respond, write_ask, write_escalate
+from typing import Optional
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("incident-agent")
@@ -17,8 +18,11 @@ class IncidentPayload(BaseModel):
     incident_sys_id: str
     number: str
     short_description: str
-    description: str = ""      
+    description: Optional[str] = ""
     priority: int = Field(ge=1, le=5)
+
+    def get_description(self) -> str:
+        return self.description or ""
 
 
 def process_incident(payload: IncidentPayload):
@@ -32,7 +36,7 @@ def process_incident(payload: IncidentPayload):
                 f"(sys_id={payload.incident_sys_id}): "
                 f"'{payload.short_description}' (priority {payload.priority})")
 
-    result = get_decision(payload.short_description, payload.description)
+    result = get_decision(payload.short_description, payload.get_description())
     decision = result["decision"]
     message = result["message"]
 
