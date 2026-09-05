@@ -27,33 +27,30 @@ class IncidentPayload(BaseModel):
 
 def process_incident(payload: IncidentPayload):
     if payload.incident_sys_id in processed_incidents:
-        logger.info(f"[SKIP] {payload.number} (sys_id={payload.incident_sys_id}) already processed")
+        logger.info(f"[SKIP] {payload.number} already processed")
         return
-
     processed_incidents.add(payload.incident_sys_id)
 
-    logger.info(f"[BACKGROUND] Processing incident {payload.number} "
-                f"(sys_id={payload.incident_sys_id}): "
-                f"'{payload.short_description}' (priority {payload.priority})")
+    try:
+        logger.info(f"[BACKGROUND] Processing incident {payload.number}...")
+        result = get_decision(payload.short_description, payload.get_description())
+        decision = result["decision"]
+        message = result["message"]
+        logger.info(f"[DECISION] {payload.number} → {decision}: {message}")
 
-    result = get_decision(payload.short_description, payload.get_description())
-    decision = result["decision"]
-    message = result["message"]
+        if decision == "respond":
+            success = write_respond(payload.incident_sys_id, message)
+        elif decision == "ask":
+            success = write_ask(payload.incident_sys_id, message)
+        else:
+            success = write_escalate(payload.incident_sys_id, message)
 
-    logger.info(f"[DECISION] {payload.number} → {decision}: {message}")
-
-    if decision == "respond":
-        success = write_respond(payload.incident_sys_id, message)
-    elif decision == "ask":
-        success = write_ask(payload.incident_sys_id, message)
-    else:  # escalate
-        success = write_escalate(payload.incident_sys_id, message)
-
-    if success:
-        logger.info(f"[DONE] {payload.number} updated successfully")
-    else:
-        logger.error(f"[DONE] {payload.number} update FAILED")
-        
+        if success:
+            logger.info(f"[DONE] {payload.number} updated successfully")
+        else:
+            logger.error(f"[DONE] {payload.number} update FAILED")
+    except Exception as e:
+        logger.error(f"[ERROR] Unexpected failure processing {payload.number}: {e}")
 
 @app.post("/webhook", status_code=202)
 async def webhook(payload: IncidentPayload, background_tasks: BackgroundTasks):
