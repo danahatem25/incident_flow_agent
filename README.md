@@ -93,7 +93,7 @@ Copy the `https://....ngrok-free.dev` (or `.app`) URL shown in the output.
    - Table: `Incident [incident]`
    - Advanced: checked
    - When: `after`, with **Insert** checked
-2. In the **Advanced** tab, paste the script from `AI_Engineering_Task0_Assets/business_rule.js`, replacing `YOUR_ENDPOINT` with your ngrok URL from Step 6 (keep `/webhook` at the end).
+2. In the **Advanced** tab, paste the script from `business_rule.js`(in this repo), replacing `YOUR_ENDPOINT` with your ngrok URL from Step 6 (keep `/webhook` at the end).
 3. Click **Submit**.
 
 ### 8. Test it
